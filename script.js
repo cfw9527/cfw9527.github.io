@@ -104,27 +104,85 @@ function draw() {
     // 绘制网格（可选）
     drawGrid();
     
-    // 绘制蛇
+    // 绘制蛇 - 使用更可爱的圆形
     gameState.snake.forEach((segment, index) => {
+        const radius = config.gridSize * 0.8 / 2; // 稍微小一点的圆形
+        const centerX = segment.x + config.gridSize / 2;
+        const centerY = segment.y + config.gridSize / 2;
+        
+        // 设置颜色
         ctx.fillStyle = index === 0 ? config.headColor : config.snakeColor;
-        ctx.fillRect(segment.x, segment.y, config.gridSize, config.gridSize);
+        
+        // 绘制圆形身体
+        ctx.beginPath();
+        ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
+        ctx.fill();
         
         // 添加边框效果
         ctx.strokeStyle = '#1e8449';
         ctx.lineWidth = 2;
-        ctx.strokeRect(segment.x, segment.y, config.gridSize, config.gridSize);
+        ctx.stroke();
+        
+        // 为蛇头添加眼睛
+        if (index === 0) {
+            ctx.fillStyle = 'white';
+            const eyeRadius = radius * 0.2;
+            const eyeOffset = radius * 0.4;
+            
+            // 根据蛇头方向绘制眼睛
+            if (gameState.direction === 'up') {
+                ctx.beginPath();
+                ctx.arc(centerX - eyeOffset, centerY - eyeOffset, eyeRadius, 0, Math.PI * 2);
+                ctx.arc(centerX + eyeOffset, centerY - eyeOffset, eyeRadius, 0, Math.PI * 2);
+                ctx.fill();
+            } else if (gameState.direction === 'down') {
+                ctx.beginPath();
+                ctx.arc(centerX - eyeOffset, centerY + eyeOffset, eyeRadius, 0, Math.PI * 2);
+                ctx.arc(centerX + eyeOffset, centerY + eyeOffset, eyeRadius, 0, Math.PI * 2);
+                ctx.fill();
+            } else if (gameState.direction === 'left') {
+                ctx.beginPath();
+                ctx.arc(centerX - eyeOffset, centerY - eyeOffset, eyeRadius, 0, Math.PI * 2);
+                ctx.arc(centerX - eyeOffset, centerY + eyeOffset, eyeRadius, 0, Math.PI * 2);
+                ctx.fill();
+            } else if (gameState.direction === 'right') {
+                ctx.beginPath();
+                ctx.arc(centerX + eyeOffset, centerY - eyeOffset, eyeRadius, 0, Math.PI * 2);
+                ctx.arc(centerX + eyeOffset, centerY + eyeOffset, eyeRadius, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
     });
     
-    // 绘制食物
-    ctx.fillStyle = config.foodColor;
+    // 绘制食物 - 小苹果
+    const appleRadius = config.gridSize * 0.7 / 2;
+    const appleX = gameState.food.x + config.gridSize / 2;
+    const appleY = gameState.food.y + config.gridSize / 2;
+    
+    // 绘制苹果主体
+    ctx.fillStyle = '#e74c3c'; // 红色苹果
     ctx.beginPath();
-    ctx.arc(
-        gameState.food.x + config.gridSize / 2,
-        gameState.food.y + config.gridSize / 2,
-        config.gridSize / 2,
-        0,
-        Math.PI * 2
-    );
+    ctx.arc(appleX, appleY, appleRadius, 0, Math.PI * 2);
+    ctx.fill();
+    
+    // 添加苹果顶部
+    ctx.fillStyle = '#2ecc71'; // 绿色顶部
+    ctx.beginPath();
+    ctx.arc(appleX, appleY - appleRadius * 0.8, appleRadius * 0.3, 0, Math.PI * 2);
+    ctx.fill();
+    
+    // 添加苹果茎
+    ctx.strokeStyle = '#8b4513'; // 棕色茎
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(appleX, appleY - appleRadius * 0.8);
+    ctx.lineTo(appleX, appleY - appleRadius);
+    ctx.stroke();
+    
+    // 添加叶子
+    ctx.fillStyle = '#2ecc71';
+    ctx.beginPath();
+    ctx.ellipse(appleX + appleRadius * 0.3, appleY - appleRadius * 0.9, appleRadius * 0.25, appleRadius * 0.15, 0, 0, Math.PI * 2);
     ctx.fill();
 }
 
@@ -308,22 +366,23 @@ function handleKeyPress(e) {
     // 处理方向键
     switch (e.keyCode) {
         case 38: // 上
-            if (gameState.direction !== 'down') {
-                gameState.nextDirection = 'up';
-            }
-            break;
         case 40: // 下
-            if (gameState.direction !== 'up') {
-                gameState.nextDirection = 'down';
-            }
-            break;
         case 37: // 左
-            if (gameState.direction !== 'right') {
-                gameState.nextDirection = 'left';
-            }
-            break;
         case 39: // 右
-            if (gameState.direction !== 'left') {
+            // 如果游戏未开始，按任意方向键立即开始游戏
+            if (!gameState.isRunning) {
+                resetGame();
+                startGame();
+            }
+            
+            // 设置方向
+            if (e.keyCode === 38 && gameState.direction !== 'down') {
+                gameState.nextDirection = 'up';
+            } else if (e.keyCode === 40 && gameState.direction !== 'up') {
+                gameState.nextDirection = 'down';
+            } else if (e.keyCode === 37 && gameState.direction !== 'right') {
+                gameState.nextDirection = 'left';
+            } else if (e.keyCode === 39 && gameState.direction !== 'left') {
                 gameState.nextDirection = 'right';
             }
             break;
@@ -361,6 +420,9 @@ function setupEventListeners() {
     
     // 为移动设备添加触摸控制
     setupMobileControls();
+    
+    // 初始化游戏
+    initGame();
 }
 
 // 设置移动设备控制
@@ -387,12 +449,8 @@ function setupMobileControls() {
             const button = document.createElement('button');
             button.id = btn.id;
             button.textContent = btn.text;
-            // 同时支持触摸和点击事件
-            button.addEventListener('touchstart', (e) => {
-                e.preventDefault();
-            });
-            button.addEventListener('mousedown', (e) => {
-                e.preventDefault();
+            // 设置方向的函数
+            const setDirection = () => {
                 const directionMap = {
                     'up': 'up',
                     'down': 'down',
@@ -408,9 +466,25 @@ function setupMobileControls() {
                     'right': 'left'
                 };
                 
+                // 如果游戏未开始，先开始游戏
+                if (!gameState.isRunning) {
+                    resetGame();
+                    startGame();
+                }
+                
                 if (gameState.direction !== oppositeDirections[newDirection]) {
                     gameState.nextDirection = newDirection;
                 }
+            };
+            
+            // 同时支持触摸和点击事件
+            button.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                setDirection();
+            });
+            button.addEventListener('mousedown', (e) => {
+                e.preventDefault();
+                setDirection();
             });
             controlsContainer.appendChild(button);
         });
