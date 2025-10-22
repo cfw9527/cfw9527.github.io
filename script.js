@@ -254,16 +254,26 @@ function startGame() {
 
 // 暂停游戏
 function pauseGame() {
-    if (gameState.isRunning) {
-        gameState.isPaused = !gameState.isPaused;
-        startBtn.textContent = gameState.isPaused ? '继续' : '继续';
+    if (gameState.isRunning && !gameState.isPaused) {
+        gameState.isPaused = true;
+        startBtn.textContent = '继续';
     }
 }
 
 // 重置游戏
 function resetGame() {
+    // 清除游戏循环
     clearInterval(gameState.gameLoop);
+    
+    // 强制重置所有游戏状态
+    gameState.isRunning = false;
+    gameState.isPaused = false;
+    gameState.gameLoop = null;
+    
+    // 完全重新初始化游戏
     initGame();
+    
+    // 确保按钮状态正确
     startBtn.textContent = '开始游戏';
 }
 
@@ -329,9 +339,18 @@ function handleKeyPress(e) {
 function setupEventListeners() {
     startBtn.addEventListener('click', () => {
         if (!gameState.isRunning) {
-            startGame();
-        } else {
-            pauseGame();
+            // 检查是否是游戏结束后的重新开始状态
+            if (startBtn.textContent === '重新开始') {
+                // 游戏结束后点击重新开始，应该完全重置游戏
+                resetGame();
+            } else {
+                // 正常开始新游戏
+                startGame();
+            }
+        } else if (gameState.isPaused) {
+            // 只有暂停时才继续游戏
+            gameState.isPaused = false;
+            startBtn.textContent = '继续';
         }
     });
     
@@ -353,6 +372,10 @@ function setupMobileControls() {
         const controlsContainer = document.createElement('div');
         controlsContainer.className = 'mobile-controls';
         
+        // 创建占位元素放在中心位置
+        const placeholder = document.createElement('div');
+        controlsContainer.appendChild(placeholder);
+        
         const buttons = [
             { id: 'up', text: '↑' },
             { id: 'left', text: '←' },
@@ -364,7 +387,11 @@ function setupMobileControls() {
             const button = document.createElement('button');
             button.id = btn.id;
             button.textContent = btn.text;
+            // 同时支持触摸和点击事件
             button.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+            });
+            button.addEventListener('mousedown', (e) => {
                 e.preventDefault();
                 const directionMap = {
                     'up': 'up',
@@ -388,9 +415,14 @@ function setupMobileControls() {
             controlsContainer.appendChild(button);
         });
         
-        // 将控制按钮添加到游戏容器
-        const gameContainer = document.querySelector('.game-container');
-        gameContainer.appendChild(controlsContainer);
+        // 将控制按钮添加到分数显示下方
+        const gameInfo = document.querySelector('.game-info');
+        if (gameInfo) {
+            gameInfo.parentNode.insertBefore(controlsContainer, gameInfo.nextSibling);
+        } else {
+            const gameContainer = document.querySelector('.game-container');
+            gameContainer.appendChild(controlsContainer);
+        }
     }
 }
 

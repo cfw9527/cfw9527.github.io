@@ -149,24 +149,31 @@ button {
     display: none;
     grid-template-columns: repeat(3, 1fr);
     grid-template-rows: repeat(3, 1fr);
-    gap: 10px;
-    width: 250px;
-    height: 250px;
-    margin-top: 20px;
+    gap: 5px;
+    width: 150px;
+    height: 150px;
+    margin: 10px auto 20px;
+    background-color: rgba(255, 255, 255, 0.9);
+    padding: 5px;
+    border-radius: 10px;
 }
 
 .mobile-controls button {
     background-color: #007bff;
     color: white;
     border-radius: 50%;
-    font-size: 24px;
+    font-size: 18px;
     display: flex;
     justify-content: center;
     align-items: center;
+    min-width: 40px;
+    min-height: 40px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
 }
 
-.mobile-controls button:hover {
+.mobile-controls button:active {
     background-color: #0056b3;
+    transform: scale(0.95);
 }
 
 #up {
@@ -189,6 +196,14 @@ button {
     grid-row: 2;
 }
 
+/* 隐藏中间的空白格子 */
+.mobile-controls > div:nth-child(5) {
+    grid-column: 2;
+    grid-row: 2;
+    visibility: hidden;
+}
+
+/* 移动设备上始终显示控制按钮 */
 @media (max-width: 768px) {
     .mobile-controls {
         display: grid;
